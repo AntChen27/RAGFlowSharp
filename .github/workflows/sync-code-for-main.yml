@@ -1,0 +1,45 @@
+# 工作流名称
+name: Sync Upstream Repository
+
+# 触发条件：定时触发 + 手动触发
+on:
+  # 定时触发（UTC 时间，每天凌晨 2 点执行，可自行修改）
+  schedule:
+    - cron: '0 2 * * *'
+  # 手动触发（在仓库 Actions 页面可点击 "Run workflow" 执行）
+  workflow_dispatch:
+
+# 执行任务
+jobs:
+  sync:
+    # 运行环境
+    runs-on: ubuntu-latest
+    steps:
+      # 步骤1：检出你的 fork 仓库代码
+      - name: Checkout your fork repository
+        uses: actions/checkout@v4
+        with:
+          # 拉取所有历史记录，确保合并完整
+          fetch-depth: 0
+
+      # 步骤2：添加上游仓库地址并拉取最新代码
+      - name: Add upstream repository and fetch
+        run: |
+          # 替换为原仓库地址
+          git remote add upstream https://github.com/fengb3/RAGFlowSharp.git
+          git fetch upstream
+
+      # 步骤3：合并上游主分支代码到你的主分支
+      - name: Merge upstream main to your main
+        run: |
+          git checkout main
+          # 解决可能的冲突（自动使用本地版本，如需手动解决可调整）
+          git merge --strategy-option theirs upstream/main
+
+      # 步骤4：推送同步后的代码到你的 fork 仓库
+      - name: Push to your fork repository
+        run: |
+          git push origin main
+        env:
+          # 使用 GitHub 内置的 token 授权推送
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
